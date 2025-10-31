@@ -1,52 +1,49 @@
----
 name: Create Vale WASM Release
+
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Release version (e.g., v1.0.0)
+        description: 'Release version (e.g., v1.0.0)'
         required: true
         type: string
   push:
     tags:
-      name: Create Vale WASM Release
-      on:
-        workflow_dispatch:
-          inputs:
-            version:
-              description: Release version (e.g., v1.0.0)
-              required: true
-              type: string
-        push:
-          tags:
-            - v*
-      permissions:
-        contents: write
-      jobs:
-        release:
-          runs-on: ubuntu-latest
-          steps:
-            - uses: actions/checkout@v4
-            - name: Set version
-              id: version
-              run: |
-                if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-                  VERSION="${{ github.event.inputs.version }}"
-                else
-                  VERSION="${GITHUB_REF#refs/tags/}"
-                fi
-                echo "version=$VERSION" >> $GITHUB_OUTPUT
-            - name: Check artifact
-              run: |
-                if [ ! -f "vale.wasm" ]; then
-                  echo "vale.wasm not found"
-                  exit 1
-                fi
-            - name: Create GitHub Release
-              uses: softprops/action-gh-release@v1
-              with:
-                tag_name: ${{ steps.version.outputs.version }}
-                name: ${{ steps.version.outputs.version }}
-                files: vale.wasm
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check artifact
+        run: |
+          if [ ! -f "vale.wasm" ]; then
+            echo "vale.wasm not found"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          files: vale.wasm
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
